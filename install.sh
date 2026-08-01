@@ -162,7 +162,7 @@ sudo isenkram-autoinstall-firmware \
 log_info "Usuwanie zbędnych pakietów..."
 PACKAGES_REMOVE=(
     nano konqueror plasma-browser-integration plasma-vault
-    krdp plasma-thunderbolt kontact kmail kontrast plasma-welcome
+    krdp krfb plasma-thunderbolt kontact kmail kontrast plasma-welcome
     imagemagick kaddressbook kdepim-runtime akonadi-server
     akregator korganizer epiphany
 )
