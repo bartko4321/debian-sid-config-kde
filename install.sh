@@ -201,7 +201,7 @@ PACKAGES_INSTALL=(
     vim dconf-editor hunspell-pl fastfetch bleachbit profile-sync-daemon
     plymouth plymouth-themes
     unrar-free kio-admin mc btrfs-progs exfatprogs ntfs-3g os-prober
-    adb fastboot fsarchiver inxi pv rsync
+    adb fastboot fsarchiver inxi pv rsync cdemu-daemon cdemu-client
     7zip makeself zenity innoextract needrestart flatpak timeshift flatseal
     # Python
     python3-defusedxml python3-packaging python3-pip python3-tqdm
