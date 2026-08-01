@@ -164,7 +164,7 @@ PACKAGES_REMOVE=(
     nano konqueror plasma-browser-integration plasma-vault
     krdp krfb plasma-thunderbolt kontact kmail kontrast plasma-welcome
     imagemagick kaddressbook kdepim-runtime akonadi-server
-    akregator korganizer epiphany
+    akregator korganizer
 )
 for pkg in "${PACKAGES_REMOVE[@]}"; do
     sudo apt-get purge -yq "$pkg" 2>/dev/null || true
