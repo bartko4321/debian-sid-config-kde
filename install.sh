@@ -164,12 +164,30 @@ PACKAGES_REMOVE=(
     nano konqueror plasma-browser-integration plasma-vault
     krdp plasma-thunderbolt kontact kmail kontrast plasma-welcome
     imagemagick kaddressbook kdepim-runtime akonadi-server
-    akregator korganizer
+    akregator korganizer epiphany
 )
 for pkg in "${PACKAGES_REMOVE[@]}"; do
     sudo apt-get purge -yq "$pkg" 2>/dev/null || true
 done
 sudo apt-get autoremove -yq
+
+# Czyszczenie pozostałości po pakietach KDE PIM (purge nie usuwa danych/konfiguracji użytkownika w $HOME)
+log_info "Czyszczenie pozostałości po Akonadi/KMail/Kontact w katalogu domowym..."
+rm -rf ~/.local/share/akonadi
+rm -rf ~/.local/share/kmail2
+rm -rf ~/.local/share/local-mail
+rm -rf ~/.local/share/contacts
+rm -rf ~/.local/share/korganizer
+rm -rf ~/.local/share/akregator
+rm -rf ~/.local/share/kontact
+rm -rf ~/.config/akonadi*
+rm -rf ~/.config/kmail*
+rm -rf ~/.config/kontact*
+rm -rf ~/.config/korganizer*
+rm -rf ~/.config/kaddressbook*
+rm -rf ~/.config/akregator*
+rm -rf ~/.config/emailidentities
+rm -rf ~/.config/mailtransports
 
 # --- Główna instalacja ---
 log_info "Instalacja pakietów głównych..."
