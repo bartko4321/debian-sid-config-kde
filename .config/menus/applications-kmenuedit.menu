@@ -61,7 +61,9 @@
    <Filename>audacity.desktop</Filename>
    <Filename>org.kde.dragonplayer.desktop</Filename>
    <Filename>org.kde.juk.desktop</Filename>
+   <Filename>fr.handbrake.ghb.desktop</Filename>
    <Filename>org.kde.kdenlive.desktop</Filename>
+   <Filename>soundconverter.desktop</Filename>
    <Filename>org.mixxx.Mixxx.desktop</Filename>
    <Separator/>
    <Merge type="menus"/>
