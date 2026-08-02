@@ -196,7 +196,7 @@ PACKAGES_INSTALL=(
     # Przeglądarki komunikatory
     google-chrome-stable brave-origin thunderbird thunderbird-l10n-pl telegram-desktop
     # Multimedia
-    qbittorrent krita audacity gmic mixxx kdenlive
+    qbittorrent krita audacity gmic mixxx kdenlive handbrake soundconverter 
     # Narzędzia systemowe
     vim dconf-editor hunspell-pl fastfetch bleachbit profile-sync-daemon
     plymouth plymouth-themes
