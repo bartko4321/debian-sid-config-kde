@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==========================================================
-# KOMPLEKSOWY SKRYPT KONFIGURACYJNY SYSTEMU (KDE PLASMA + DEBIAN TESTING)
+# KOMPLEKSOWY SKRYPT KONFIGURACYJNY SYSTEMU (KDE PLASMA + DEBIAN 13)
 # ==========================================================
 
 set -euo pipefail
@@ -40,8 +40,7 @@ CURRENT_USER=$(whoami)
 OLD_USER_PLACEHOLDER="bartek"
 DEB_DIR="/tmp/debs_$$"
 
-log_warn "Ten skrypt jest dostosowany do Debian TESTING — gałęzi rolling-release, w której pakiety"
-log_warn "bywają czasem chwilowo niespójne/uninstallable. Zalecany jest snapshot/backup przed uruchomieniem."
+log_info "Ten skrypt jest dostosowany do Debian 13 (Stable). Rozpoczynam konfigurację..."
 
 # --- Sprawdzenie uprawnień ---
 if [[ "$EUID" -eq 0 ]]; then
@@ -84,13 +83,12 @@ if [[ -f /etc/apt/sources.list ]]; then
     fi
 fi
 
-# Rozszerzenie repozytoriów dla Debiana 12+ (nowy format DEB822)
+# Rozszerzenie repozytoriów dla Debiana 12/13+ (nowy format DEB822)
 if [[ -f /etc/apt/sources.list.d/debian.sources ]]; then
     if ! grep -q "non-free-firmware" /etc/apt/sources.list.d/debian.sources; then
         sudo sed -i -E '/^Components:/ s/$/ contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources || true
     fi
 fi
-
 
 # Narzędzia potrzebne do konfiguracji kluczy GPG i wykrywania GPU
 wait_for_apt
@@ -111,19 +109,7 @@ http://dl.google.com/linux/chrome/deb/ stable main" \
         | sudo tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
 fi
 
-# Repozytorium Brave (Origin) - wg https://brave.com/origin/linux/
-# UWAGA: pliki brave-browser-archive-keyring.gpg oraz brave-core.asc hostowane
-# przez Brave na S3 bywają nieaktualne względem klucza, którym faktycznie
-# podpisują InRelease (znany, powtarzający się problem, np.
-# https://github.com/brave/brave-browser/issues/42949 i #52253), co objawia
-# się błędem "NO_PUBKEY". Dlatego pobieramy klucz bezpośrednio po jego ID
-# z serwera kluczy zamiast z plików hostowanych przez Brave.
-# WAŻNE: nowoczesny gpg domyślnie zapisuje nowo tworzony keyring w formacie
-# "keybox" (.kbx), którego apt NIE obsługuje ("unsupported filetype") —
-# dlatego importujemy do tymczasowego GNUPGHOME i EKSPORTUJEMY klucz do
-# klasycznego formatu binarnego OpenPGP, jakiego wymaga apt. Zapisujemy też
-# klucz pod /usr/share/keyrings, bo tę ścieżkę ma na sztywno wpisaną
-# (Signed-By) plik .sources pobierany bezpośrednio z serwera Brave.
+# Repozytorium Brave (Origin)
 sudo mkdir -p /usr/share/keyrings
 sudo rm -f /usr/share/keyrings/brave-browser-archive-keyring.gpg
 BRAVE_KEY_ID="0686B78420038257"
@@ -140,8 +126,6 @@ sudo curl -fsSLo /etc/apt/sources.list.d/brave-browser-release.sources \
     https://brave-browser-apt-release.s3.brave.com/brave-browser.sources
 
 wait_for_apt
-# Na Debian Testing zwykłe "apt-get upgrade" może nie poradzić sobie ze zmianami zależności
-# przy przejściach bibliotek (library transitions) — dlatego używamy full-upgrade.
 sudo apt-get update -yq && sudo apt-get full-upgrade -yq
 
 # ==========================================================
@@ -150,10 +134,8 @@ sudo apt-get update -yq && sudo apt-get full-upgrade -yq
 log_info "Instalacja podstawowych narzędzi i firmware..."
 
 wait_for_apt
-# Na Testing pakiety bywają chwilowo niedostępne/w tranzycji, dlatego nie przerywamy
-# całego skryptu, jeśli akurat brakuje któregoś z metapakietów firmware.
 sudo apt-get install -yq isenkram-cli firmware-linux firmware-linux-nonfree \
-    || log_warn "Nie udało się zainstalować części pakietów firmware (możliwa chwilowa niespójność Testing) — kontynuuję."
+    || log_warn "Błąd instalacji pakietów firmware."
 
 sudo isenkram-autoinstall-firmware \
     || log_warn "isenkram-autoinstall-firmware zakończył się błędem (ignoruję)"
@@ -171,23 +153,14 @@ for pkg in "${PACKAGES_REMOVE[@]}"; do
 done
 sudo apt-get autoremove -yq
 
-# Czyszczenie pozostałości po pakietach KDE PIM (purge nie usuwa danych/konfiguracji użytkownika w $HOME)
+# Czyszczenie pozostałości po pakietach KDE PIM
 log_info "Czyszczenie pozostałości po Akonadi/KMail/Kontact w katalogu domowym..."
-rm -rf ~/.local/share/akonadi
-rm -rf ~/.local/share/kmail2
-rm -rf ~/.local/share/local-mail
-rm -rf ~/.local/share/contacts
-rm -rf ~/.local/share/korganizer
-rm -rf ~/.local/share/akregator
-rm -rf ~/.local/share/kontact
-rm -rf ~/.config/akonadi*
-rm -rf ~/.config/kmail*
-rm -rf ~/.config/kontact*
-rm -rf ~/.config/korganizer*
-rm -rf ~/.config/kaddressbook*
-rm -rf ~/.config/akregator*
-rm -rf ~/.config/emailidentities
-rm -rf ~/.config/mailtransports
+rm -rf ~/.local/share/akonadi ~/.local/share/kmail2 ~/.local/share/local-mail \
+       ~/.local/share/contacts ~/.local/share/korganizer ~/.local/share/akregator \
+       ~/.local/share/kontact
+rm -rf ~/.config/akonadi* ~/.config/kmail* ~/.config/kontact* \
+       ~/.config/korganizer* ~/.config/kaddressbook* ~/.config/akregator* \
+       ~/.config/emailidentities ~/.config/mailtransports
 
 # --- Główna instalacja ---
 log_info "Instalacja pakietów głównych..."
@@ -196,7 +169,7 @@ PACKAGES_INSTALL=(
     # Przeglądarki komunikatory
     google-chrome-stable brave-origin thunderbird thunderbird-l10n-pl telegram-desktop
     # Multimedia
-    qbittorrent krita audacity gmic mixxx kdenlive handbrake soundconverter 
+    qbittorrent krita audacity gmic mixxx kdenlive handbrake soundconverter
     # Narzędzia systemowe
     vim dconf-editor hunspell-pl fastfetch bleachbit profile-sync-daemon
     plymouth plymouth-themes
@@ -215,64 +188,49 @@ PACKAGES_INSTALL=(
     # Inne
     zsh zsh-syntax-highlighting zsh-autosuggestions
 )
-# Instalujemy paczkami pojedynczo, aby chwilowy brak jednego pakietu w Testing/Sid
-# (np. zablokowana migracja) nie przerywał instalacji reszty.
+
 FAILED_PACKAGES=()
 for pkg in "${PACKAGES_INSTALL[@]}"; do
     sudo apt-get install -yq "$pkg" || FAILED_PACKAGES+=("$pkg")
 done
 if [[ ${#FAILED_PACKAGES[@]} -gt 0 ]]; then
-    log_warn "Nie udało się zainstalować: ${FAILED_PACKAGES[*]} — kontynuuję."
+    log_warn "Nie udało się zainstalować: ${FAILED_PACKAGES[*]}"
 fi
 
-# --- winetricks: pakiet bywa chwilowo niedostępny w Testing/Sid (zablokowana migracja
-# w Debianie), a to w istocie jeden skrypt bash bez zależności binarnych —
-# instalujemy go więc bezpośrednio z GitHuba, z apt jako opcją zapasową.
+# --- Winetricks ---
+# Nawet na stable instalacja wersji z GitHuba bywa preferowana do gier (nowsze "verbsy")
 log_info "Instalacja winetricks..."
 sudo apt-get install -yq cabextract unzip wget >/dev/null 2>&1 || true
-if sudo apt-get install -yq winetricks; then
-    log_ok "winetricks zainstalowany z apt"
-elif sudo curl -fsSLo /usr/local/bin/winetricks \
+if sudo curl -fsSLo /usr/local/bin/winetricks \
         https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks \
      && sudo chmod +x /usr/local/bin/winetricks; then
-    log_ok "winetricks zainstalowany bezpośrednio z GitHub (apt nie miał pakietu)"
+    log_ok "Winetricks zainstalowany w najnowszej wersji bezpośrednio z GitHub"
+elif sudo apt-get install -yq winetricks; then
+    log_ok "Winetricks zainstalowany z systemowego repozytorium apt"
 else
     log_warn "Nie udało się zainstalować winetricks — pomijam."
 fi
 
 # --- WINE ORAZ 32-BITOWE BIBLIOTEKI DO GIER ---
-# UWAGA: pakiet "wine" na Debian Testing bywa okresowo całkowicie nieobecny
-# w repozytorium (blokada migracji z unstable do testing - znany, powtarzający
-# się problem, patrz https://bugs.debian.org/1124433). W takiej sytuacji
-# "apt-get install wine" kończy się błędem "nie ma kandydata do instalacji"
-# mimo poprawnej konfiguracji repozytoriów. Dlatego najpierw próbujemy
-# zainstalować Wine z repozytorium Debiana, a jeśli się nie uda - używamy
-# oficjalnego repozytorium WineHQ jako zapasowego źródła.
 log_info "Instalacja Wine oraz 32-bitowych bibliotek (Audio, MangoHud)..."
 wait_for_apt
 sudo apt-get install -yq libpulse0:i386 libopenal1:i386 mangohud:i386
 
 if sudo apt-get install -yq wine wine64 wine32:i386; then
-    log_ok "Wine zainstalowany z repozytorium Debiana"
+    log_ok "Wine zainstalowany z głównego repozytorium Debiana 13."
 else
-    log_warn "Pakiet wine niedostępny w repozytorium Debiana (prawdopodobnie zablokowana"
-    log_warn "migracja do Testing) - dodaję repozytorium WineHQ jako źródło zapasowe..."
-
+    log_warn "Wystąpił problem z pakietem wine w systemie. Próba instalacji z repozytorium WineHQ..."
     sudo mkdir -pm755 /etc/apt/keyrings
     if sudo curl -fsSLo /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \
         && sudo curl -fsSLo /etc/apt/sources.list.d/winehq.sources \
             https://dl.winehq.org/wine-builds/debian/dists/trixie/winehq-trixie.sources; then
-        # WineHQ nie publikuje jeszcze paczek dla "forky" (Testing), ale paczki
-        # z "trixie" (obecny stable) działają na Testing bez problemu.
         wait_for_apt
         sudo apt-get update -yq
         if sudo apt-get install -yq --install-recommends winehq-stable; then
-            log_ok "Wine zainstalowany z repozytorium WineHQ (winehq-stable)"
+            log_ok "Wine zainstalowany z repozytorium WineHQ."
         else
-            log_err "Nie udało się zainstalować Wine ani z Debiana, ani z WineHQ - pomijam."
+            log_err "Nie udało się zainstalować Wine ze źródła zapasowego."
         fi
-    else
-        log_err "Nie udało się pobrać klucza/repozytorium WineHQ - Wine nie został zainstalowany."
     fi
 fi
 
@@ -283,7 +241,6 @@ log_info "Wykrywanie układu graficznego (biblioteki 32-bit oraz moduły jądra)
 VGA_INFO=$(lspci -nn | grep -iE "VGA|3D|Display" || true)
 MODULES_FILE="/etc/initramfs-tools/modules"
 
-# Funkcja pomocnicza do dodawania modułów bez duplikatów
 add_module() {
     grep -q "^$1" "$MODULES_FILE" || echo "$1" | sudo tee -a "$MODULES_FILE" > /dev/null
 }
@@ -305,11 +262,10 @@ elif echo "$VGA_INFO" | grep -iq "Intel"; then
     sudo apt-get install -yq libgl1-mesa-dri:i386 mesa-vulkan-drivers:i386
     add_module "i915"
 else
-    log_warn "Nie rozpoznano jednoznacznie układu (NVIDIA/AMD/Intel). Instaluję domyślne pakiety Mesa."
+    log_warn "Nie rozpoznano jednoznacznie układu. Instaluję domyślne pakiety Mesa."
     sudo apt-get install -yq libgl1-mesa-dri:i386 mesa-vulkan-drivers:i386
 fi
 
-# Aktualizacja initramfs, aby załadować nowe moduły graficzne przy rozruchu
 log_info "Przebudowa obrazu initramfs..."
 sudo update-initramfs -u
 
@@ -384,7 +340,6 @@ else
     log_warn "Pakiet firmware-atheros niedostępny — pomijam"
 fi
 
-# Serwis libvirt (uruchamiamy PRZED konfiguracją UFW, żeby virbr0 już istniał)
 for svc in libvirtd virtqemud; do
     if systemctl list-unit-files "${svc}.service" 2>/dev/null | grep -q "$svc"; then
         sudo systemctl enable --now "${svc}.service"
@@ -393,15 +348,13 @@ for svc in libvirtd virtqemud; do
     fi
 done
 
-# Upewnij się, że sieć "default" (NAT dla maszyn wirtualnych) istnieje i wystartuje przy boocie
 if ! sudo virsh net-info default &>/dev/null; then
     log_warn "Sieć 'default' nie jest zdefiniowana - definiuję z domyślnego XML..."
     sudo virsh net-define /usr/share/libvirt/networks/default.xml || true
 fi
 sudo virsh net-start default 2>/dev/null || true
-sudo virsh net-autostart default || log_warn "Nie udało się ustawić autostartu sieci 'default' - sprawdź 'virsh net-list --all'."
+sudo virsh net-autostart default || log_warn "Nie udało się ustawić autostartu sieci 'default'."
 
-# UFW (Poprawione sprawdzanie)
 if command -v ufw &>/dev/null || [[ -x /usr/sbin/ufw ]]; then
     if [[ -f /etc/default/ufw ]]; then
         sudo sed -i 's/^DEFAULT_FORWARD_POLICY=.*/DEFAULT_FORWARD_POLICY="ACCEPT"/' \
@@ -419,13 +372,10 @@ else
     log_warn "ufw niedostępny — pomijam konfigurację firewalla"
 fi
 
-# Grupy libvirt
 for grp in libvirt libvirt-qemu kvm; do
     if getent group "$grp" &>/dev/null; then
         sudo usermod -aG "$grp" "$CURRENT_USER" \
             && log_ok "Dodano $CURRENT_USER do grupy $grp"
-    else
-        log_warn "Grupa $grp nie istnieje — pomijam"
     fi
 done
 
@@ -455,11 +405,9 @@ log_info "Finalizacja i optymalizacja..."
 sudo systemctl enable fstrim.timer || true
 sudo journalctl --vacuum-time=2d || true
 
-# GRUB timeout
 sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub || true
 sudo update-grub
 
-# Awatar użytkownika
 if [[ -f "$SCRIPT_DIR/piwo.png" ]]; then
     sudo mkdir -p /usr/share/plasma/avatars/ /var/lib/AccountsService/icons/
     sudo cp -af "$SCRIPT_DIR/piwo.png" /usr/share/plasma/avatars/piwo.png
@@ -469,19 +417,15 @@ if [[ -f "$SCRIPT_DIR/piwo.png" ]]; then
         "/var/lib/AccountsService/icons/$CURRENT_USER"
 fi
 
-# Zmiana tapety
 log_info "Podmiana tapet w motywie Next..."
 TARGET_DIR="/usr/share/wallpapers/Next/contents/images"
 
 for res in 1920x1080 2560x1440 5120x2880; do
     if [ -f "$SCRIPT_DIR/$res.png" ]; then
         sudo mkdir -p "$TARGET_DIR/contents/images"
-        # Używamy standardowego cp aby root został właścicielem
         sudo cp -f "$SCRIPT_DIR/$res.png" "$TARGET_DIR/$res.png"
         sudo cp -f "$SCRIPT_DIR/$res.png" "$TARGET_DIR/contents/images/$res.png"
         sudo chmod 644 "$TARGET_DIR/$res.png" "$TARGET_DIR/contents/images/$res.png"
-    else
-        log_warn "Brak pliku $res.png w katalogu ze skryptem - pomijam."
     fi
 done
 
@@ -491,16 +435,12 @@ if [ -f "$SCRIPT_DIR/5120x2880.png" ]; then
     sudo chmod 644 /usr/share/wallpapers/Next/contents/images_dark/5120x2880.png
 fi
 
-# Konfiguracja BleachBit (root)
 if [[ -d "$SCRIPT_DIR/bleachbit" ]]; then
     sudo mkdir -p /root/.config/bleachbit
     sudo cp -af "$SCRIPT_DIR/bleachbit/." /root/.config/bleachbit/
     log_ok "Skopiowano konfigurację BleachBit"
-else
-    log_warn "Folder bleachbit nie istnieje — pomijam"
 fi
 
-# DNS przez NetworkManager
 ACTIVE_CONN=$(nmcli -t -f NAME,DEVICE connection show --active 2>/dev/null \
     | grep -v "^lo" | head -n 1 | cut -d: -f1 || true)
 if [[ -n "$ACTIVE_CONN" ]]; then
@@ -508,8 +448,6 @@ if [[ -n "$ACTIVE_CONN" ]]; then
         ipv4.dns "1.1.1.1,1.0.0.1" \
         ipv6.dns "2606:4700:4700::1112,2606:4700:4700::1002"
     sudo nmcli connection up "$ACTIVE_CONN" || true
-else
-    log_warn "Brak aktywnego połączenia NetworkManager — pominięto konfigurację DNS"
 fi
 
 # ==========================================================
@@ -553,7 +491,6 @@ if [[ -d "$SCRIPT_DIR/.config" ]]; then cp -af "$SCRIPT_DIR/.config/." ~/.config
 if [[ -d "$SCRIPT_DIR/.local" ]]; then cp -af "$SCRIPT_DIR/.local/." ~/.local/; fi
 if [[ -d "$SCRIPT_DIR/.icons" ]]; then cp -af "$SCRIPT_DIR/.icons/." ~/.icons/; fi
 
-# Podmiana ścieżki
 if [[ "$OLD_USER_PLACEHOLDER" != "$CURRENT_USER" ]]; then
     find ~/.config -type f -exec sed -i "s|/home/$OLD_USER_PLACEHOLDER|/home/$CURRENT_USER|g" {} + 2>/dev/null || true
 fi
@@ -561,15 +498,12 @@ fi
 log_info "Czyszczenie pamięci podręcznej (Cache)..."
 rm -rf ~/.cache/icon-cache.kcache ~/.cache/plasma* ~/.cache/ico*
 
-# Odpalamy chwilowo Plasmę w tle (wczyta już Twoje skopiowane przed chwilą ustawienia .config)
 plasmashell >/dev/null 2>&1 &
 sleep 5
 
-# Zabijamy proces drugi raz. Plasma zrzuci stan RAMu na dysk - zapisując konfigurację
 kquitapp6 plasmashell 2>/dev/null || kquitapp5 plasmashell 2>/dev/null || killall plasmashell 2>/dev/null || true
 sleep 2
 
-# Odbudowa bazy systemowej
 if command -v kbuildsycoca6 &>/dev/null; then
     kbuildsycoca6 --noincremental &>/dev/null || true
 elif command -v kbuildsycoca5 &>/dev/null; then
