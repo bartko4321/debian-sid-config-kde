@@ -334,12 +334,6 @@ sudo apt-get install -yq \
     ovmf dnsmasq \
     bluetooth bluez bluez-firmware bluez-tools ufw
 
-if apt-cache policy firmware-atheros 2>/dev/null | grep -q "Candidate: [^(none)]"; then
-    sudo apt-get install -yq firmware-atheros
-else
-    log_warn "Pakiet firmware-atheros niedostępny — pomijam"
-fi
-
 for svc in libvirtd virtqemud; do
     if systemctl list-unit-files "${svc}.service" 2>/dev/null | grep -q "$svc"; then
         sudo systemctl enable --now "${svc}.service"
