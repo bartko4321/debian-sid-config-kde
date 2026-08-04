@@ -502,10 +502,17 @@ done
 if [[ -z "$QDBUS_BIN" ]]; then
     log_warn "Nie znaleziono polecenia qdbus – pomijanie ustawiania tapety."
 else
-    log_info "Oczekiwanie na usługę D-Bus plasmashell..."
+    # Samo istnienie usługi D-Bus plasmashell NIE oznacza, że pulpity
+    # (desktops()) są już załadowane – rejestracja D-Bus następuje bardzo
+    # wcześnie przy starcie, zanim shell zbuduje właściwe pulpity. Test
+    # 'true' zwracał sukces zbyt wcześnie, przez co pętla ustawiająca
+    # tapetę działała na PUSTEJ liście i nic się nie zmieniało – bez
+    # żadnego błędu w logach. Test poniżej sprawdza realną liczbę pulpitów.
+    log_info "Oczekiwanie, aż plasmashell załaduje pulpity..."
     READY=0
     for i in $(seq 1 30); do
-        if "$QDBUS_BIN" org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript 'true' &>/dev/null; then
+        DESKTOP_COUNT="$("$QDBUS_BIN" org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript 'print(desktops().length)' 2>/dev/null || true)"
+        if [[ "$DESKTOP_COUNT" =~ ^[1-9][0-9]*$ ]]; then
             READY=1
             break
         fi
@@ -513,17 +520,31 @@ else
     done
 
     if [[ "$READY" -ne 1 ]]; then
-        log_warn "plasmashell nie zarejestrował usługi D-Bus w czasie 30s – pomijanie ustawiania tapety."
+        log_warn "plasmashell nie zgłosił gotowych pulpitów w czasie 30s – pomijanie ustawiania tapety."
     else
         log_info "Ustawianie tapety dla wszystkich pulpitów..."
-        "$QDBUS_BIN" org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript '
+        WALLPAPER_SET_OUTPUT="$("$QDBUS_BIN" org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript '
 var allDesktops = desktops();
-for (i=0; i<allDesktops.length; i++) {
-    d = allDesktops[i];
-    d.wallpaperPlugin = "org.kde.image";
-    d.currentConfigGroup = Array("Wallpaper", "org.kde.image", "General");
-    d.writeConfig("Image", "file:///'"$HOME"'/.local/share/wallpapers/wallpaper.jpg");
-}' || log_warn "Nie udało się ustawić tapety (qdbus zwrócił błąd)."
+var errors = "";
+for (i = 0; i < allDesktops.length; i++) {
+    try {
+        d = allDesktops[i];
+        d.wallpaperPlugin = "org.kde.image";
+        d.currentConfigGroup = Array("Wallpaper", "org.kde.image", "General");
+        d.writeConfig("Image", "file:///'"$HOME"'/.local/share/wallpapers/wallpaper.jpg");
+        d.reloadConfig();
+    } catch (e) {
+        errors += e + "; ";
+    }
+}
+print(errors === "" ? "OK:" + allDesktops.length : "ERR:" + errors);
+' 2>&1)"
+
+        if [[ "$WALLPAPER_SET_OUTPUT" == OK:* ]]; then
+            log_ok "Tapeta ustawiona na ${WALLPAPER_SET_OUTPUT#OK:} pulpitach."
+        else
+            log_warn "Nie udało się ustawić tapety: $WALLPAPER_SET_OUTPUT"
+        fi
     fi
 fi
 
