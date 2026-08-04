@@ -425,13 +425,6 @@ else
     log_warn "Brak pliku wallpaper.jpg w katalogu skryptu."
 fi
 
-if [[ -f "$SCRIPT_DIR/wallpaper2.jpg" ]]; then
-    cp -f "$SCRIPT_DIR/wallpaper2.jpg" "$TARGET_DIR/wallpaper2.jpg"
-    log_ok "Skopiowano wallpaper2.jpg do $TARGET_DIR/wallpaper2.jpg"
-else
-    log_warn "Brak pliku wallpaper2.jpg w katalogu skryptu."
-fi
-
 if [[ -d "$SCRIPT_DIR/bleachbit" ]]; then
     sudo mkdir -p /root/.config/bleachbit
     sudo cp -af "$SCRIPT_DIR/bleachbit/." /root/.config/bleachbit/
@@ -496,17 +489,43 @@ log_info "Czyszczenie pamięci podręcznej (Cache)..."
 rm -rf ~/.cache/icon-cache.kcache ~/.cache/plasma* ~/.cache/ico*
 
 plasmashell >/dev/null 2>&1 &
-sleep 5
 
-log_info "Ustawianie tapety dla wszystkich pulpitów..."
-qdbus org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript '
+# Wykryj poprawną nazwę binarki qdbus (Plasma 6 często ją zmienia)
+QDBUS_BIN=""
+for candidate in qdbus qdbus6 qdbus-qt6 qdbus-qt5; do
+    if command -v "$candidate" &>/dev/null; then
+        QDBUS_BIN="$candidate"
+        break
+    fi
+done
+
+if [[ -z "$QDBUS_BIN" ]]; then
+    log_warn "Nie znaleziono polecenia qdbus – pomijanie ustawiania tapety."
+else
+    log_info "Oczekiwanie na usługę D-Bus plasmashell..."
+    READY=0
+    for i in $(seq 1 30); do
+        if "$QDBUS_BIN" org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript 'true' &>/dev/null; then
+            READY=1
+            break
+        fi
+        sleep 1
+    done
+
+    if [[ "$READY" -ne 1 ]]; then
+        log_warn "plasmashell nie zarejestrował usługi D-Bus w czasie 30s – pomijanie ustawiania tapety."
+    else
+        log_info "Ustawianie tapety dla wszystkich pulpitów..."
+        "$QDBUS_BIN" org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript '
 var allDesktops = desktops();
 for (i=0; i<allDesktops.length; i++) {
     d = allDesktops[i];
     d.wallpaperPlugin = "org.kde.image";
     d.currentConfigGroup = Array("Wallpaper", "org.kde.image", "General");
     d.writeConfig("Image", "file:///'"$HOME"'/.local/share/wallpapers/wallpaper.jpg");
-}'
+}' || log_warn "Nie udało się ustawić tapety (qdbus zwrócił błąd)."
+    fi
+fi
 
 kquitapp6 plasmashell 2>/dev/null || kquitapp5 plasmashell 2>/dev/null || killall plasmashell 2>/dev/null || true
 sleep 2
