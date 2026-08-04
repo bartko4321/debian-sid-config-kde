@@ -470,8 +470,11 @@ if command -v zsh &>/dev/null; then
 fi
 
 # ==========================================================
-# 8. KOPIOWANIE KONFIGURACJI
+# 8. KOPIOWANIE KONFIGURACJI I ZMIANA TAPETY
 # ==========================================================
+log_info "Zatrzymywanie usługi systemd środowiska KDE..."
+systemctl --user stop plasma-plasmashell.service 2>/dev/null || true
+
 log_info "Zatrzymywanie środowiska KDE, aby nie nadpisało naszych zmian..."
 kquitapp6 plasmashell 2>/dev/null || kquitapp5 plasmashell 2>/dev/null || killall plasmashell 2>/dev/null || true
 sleep 2
@@ -488,6 +491,7 @@ fi
 log_info "Czyszczenie pamięci podręcznej (Cache)..."
 rm -rf ~/.cache/icon-cache.kcache ~/.cache/plasma* ~/.cache/ico*
 
+log_info "Uruchamianie Plasmy w tle do przyjęcia instrukcji D-Bus..."
 plasmashell >/dev/null 2>&1 &
 
 # Wykryj poprawną nazwę binarki qdbus (Plasma 6 często ją zmienia)
@@ -548,8 +552,11 @@ print(errors === "" ? "OK:" + allDesktops.length : "ERR:" + errors);
     fi
 fi
 
-kquitapp6 plasmashell 2>/dev/null || kquitapp5 plasmashell 2>/dev/null || killall plasmashell 2>/dev/null || true
-sleep 2
+# Zabijamy proces drugi raz. Plasma zrzuci stan RAMu na dysk - zapisując konfigurację tapety
+log_info "Zapisywanie konfiguracji i wyłączanie Plasmy..."
+kquitapp6 plasmashell 2>/dev/null || kquitapp5 plasmashell 2>/dev/null || true
+sleep 3 # Dłuższy timeout na zrzut danych z RAM na dysk
+killall plasmashell 2>/dev/null || true
 
 if command -v kbuildsycoca6 &>/dev/null; then
     kbuildsycoca6 --noincremental &>/dev/null || true
