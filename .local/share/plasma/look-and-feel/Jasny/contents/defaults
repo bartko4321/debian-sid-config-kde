@@ -27,4 +27,4 @@ name=MacSonoma-Light
 Theme=YaplassDebian-Plasma6
 
 [Wallpaper]
-Image=/usr/share/wallpapers/Next/contents/images/wallpaper.jpg
+Image=$HOME/.local/share/wallpapers/wallpaper.jpg
