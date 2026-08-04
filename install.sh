@@ -412,27 +412,25 @@ if [[ -f "$SCRIPT_DIR/piwo.png" ]]; then
 fi
 
 log_info "Zmiana Tapety..."
-TARGET_DIR="/usr/share/wallpapers/Next/contents/images"
+TARGET_DIR="$HOME/.local/share/wallpapers"
 
 # Upewnienie się, że katalog docelowy istnieje
-sudo mkdir -p "$TARGET_DIR"
+mkdir -p "$TARGET_DIR"
 
-# Kopiowanie tapet do systemowego katalogu
+# Kopiowanie tapety do katalogu domowego
 if [[ -f "$SCRIPT_DIR/wallpaper.jpg" ]]; then
-    sudo cp -f "$SCRIPT_DIR/wallpaper.jpg" "$TARGET_DIR/"
-    log_ok "Skopiowano wallpaper.jpg"
+    cp -f "$SCRIPT_DIR/wallpaper.jpg" "$TARGET_DIR/wallpaper.jpg"
+    log_ok "Skopiowano wallpaper.jpg do $TARGET_DIR/wallpaper.jpg"
 else
     log_warn "Brak pliku wallpaper.jpg w katalogu skryptu."
 fi
 
 if [[ -f "$SCRIPT_DIR/wallpaper2.jpg" ]]; then
-    sudo cp -f "$SCRIPT_DIR/wallpaper2.jpg" "$TARGET_DIR/"
-    log_ok "Skopiowano wallpaper2.jpg"
+    cp -f "$SCRIPT_DIR/wallpaper2.jpg" "$TARGET_DIR/wallpaper2.jpg"
+    log_ok "Skopiowano wallpaper2.jpg do $TARGET_DIR/wallpaper2.jpg"
 else
     log_warn "Brak pliku wallpaper2.jpg w katalogu skryptu."
 fi
-
-done
 
 if [[ -d "$SCRIPT_DIR/bleachbit" ]]; then
     sudo mkdir -p /root/.config/bleachbit
