@@ -24,4 +24,7 @@ theme=Bryza
 name=MacSonoma-Light
 
 [ksplashrc][KSplash]
-Theme=YaplassDebian-Plasma6
+Theme=archsimpleblue
+
+[Wallpaper]
+Image=/usr/share/wallpapers/Next/contents/images/wallpaper.jpg
