@@ -412,10 +412,10 @@ if [[ -f "$SCRIPT_DIR/piwo.png" ]]; then
 fi
 
 # Zmiana ekranu logowania
-if [[ -f "$SCRIPT_DIR/start.png" ]]; then
+if [[ -f "$SCRIPT_DIR/login-wallpaper.png" ]]; then
     sudo mkdir -p /usr/share/wallpapers
-    sudo cp -f "$SCRIPT_DIR/start.png" /usr/share/wallpapers/start.png
-    sudo chmod 644 /usr/share/wallpapers/start.png
+    sudo cp -f "$SCRIPT_DIR/login-wallpaper.png" /usr/share/wallpapers/login-wallpaper.png
+    sudo chmod 644 /usr/share/wallpapers/login-wallpaper.png
 fi
 
 # Kopiowanie konfiguracji logowania
