@@ -411,6 +411,19 @@ if [[ -f "$SCRIPT_DIR/piwo.png" ]]; then
         "/var/lib/AccountsService/icons/$CURRENT_USER"
 fi
 
+# Zmiana ekranu logowania
+if [[ -f "$SCRIPT_DIR/start.png" ]]; then
+    sudo mkdir -p /usr/share/wallpapers
+    sudo cp -f "$SCRIPT_DIR/start.png" /usr/share/wallpapers/start.png
+    sudo chmod 644 /usr/share/wallpapers/start.png
+fi
+
+# Kopiowanie konfiguracji logowania
+if [[ -f "$SCRIPT_DIR/plasmalogin.conf" ]]; then
+    sudo cp -f "$SCRIPT_DIR/plasmalogin.conf" /etc/plasmalogin.conf
+    sudo chmod 644 /etc/plasmalogin.conf
+fi
+
 log_info "Zmiana Tapety..."
 TARGET_DIR="$HOME/.local/share/wallpapers"
 
