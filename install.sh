@@ -157,7 +157,7 @@ sudo apt-get autoremove -yq
 log_info "Czyszczenie pozostałości po Akonadi/KMail/Kontact w katalogu domowym..."
 rm -rf ~/.local/share/akonadi ~/.local/share/kmail2 ~/.local/share/local-mail \
        ~/.local/share/contacts ~/.local/share/korganizer ~/.local/share/akregator \
-       ~/.local/share/kontact
+       ~/.local/share/kontact ~/.local/share/konqueror \
 rm -rf ~/.config/akonadi* ~/.config/kmail* ~/.config/kontact* \
        ~/.config/korganizer* ~/.config/kaddressbook* ~/.config/akregator* \
        ~/.config/emailidentities ~/.config/mailtransports
