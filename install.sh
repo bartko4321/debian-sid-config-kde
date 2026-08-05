@@ -534,6 +534,7 @@ for (i = 0; i < allDesktops.length; i++) {
     try {
         d = allDesktops[i];
         d.wallpaperPlugin = "org.kde.image";
+        d.reloadConfig();
         d.currentConfigGroup = Array("Wallpaper", "org.kde.image", "General");
         d.writeConfig("Image", "file:///'"$HOME"'/.local/share/wallpapers/wallpaper.jpg");
         d.reloadConfig();
