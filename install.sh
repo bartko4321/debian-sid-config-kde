@@ -485,11 +485,9 @@ fi
 # ==========================================================
 # 8. KOPIOWANIE KONFIGURACJI I ZMIANA TAPETY
 # ==========================================================
-log_info "Zatrzymywanie usługi systemd środowiska KDE..."
-systemctl --user stop plasma-plasmashell.service 2>/dev/null || true
-
 log_info "Zatrzymywanie środowiska KDE, aby nie nadpisało naszych zmian..."
-kquitapp6 plasmashell 2>/dev/null || kquitapp5 plasmashell 2>/dev/null || killall plasmashell 2>/dev/null || true
+systemctl --user stop plasma-plasmashell.service 2>/dev/null || true
+kquitapp6 plasmashell 2>/dev/null || killall -9 plasmashell 2>/dev/null || true
 sleep 2
 
 log_info "Kopiowanie plików konfiguracyjnych na uśpionym środowisku..."
@@ -498,84 +496,38 @@ if [[ -d "$SCRIPT_DIR/.local" ]]; then cp -af "$SCRIPT_DIR/.local/." ~/.local/; 
 if [[ -d "$SCRIPT_DIR/.icons" ]]; then cp -af "$SCRIPT_DIR/.icons/." ~/.icons/; fi
 
 if [[ "$OLD_USER_PLACEHOLDER" != "$CURRENT_USER" ]]; then
-    find ~/.config -type f -exec sed -i "s|/home/$OLD_USER_PLACEHOLDER|/home/$CURRENT_USER|g" {} + 2>/dev/null || true
+    grep -rl --include="*.conf" --include="*.json" --include="*.ini" \
+        "/home/$OLD_USER_PLACEHOLDER" ~/.config 2>/dev/null \
+        | xargs -r sed -i "s|/home/$OLD_USER_PLACEHOLDER|/home/$CURRENT_USER|g" || true
 fi
 
 log_info "Czyszczenie pamięci podręcznej (Cache)..."
 rm -rf ~/.cache/icon-cache.kcache ~/.cache/plasma* ~/.cache/ico*
 
-log_info "Uruchamianie Plasmy w tle do przyjęcia instrukcji D-Bus..."
-plasmashell >/dev/null 2>&1 &
+log_info "Tworzenie wymuszenia tapety przy najbliższym starcie systemu..."
+WALLPAPER_PATH="$HOME/.local/share/wallpapers/wallpaper.jpg"
+AUTOSTART_DIR="$HOME/.config/autostart"
+mkdir -p "$AUTOSTART_DIR"
 
-# Wykryj poprawną nazwę binarki qdbus (Plasma 6 często ją zmienia)
-QDBUS_BIN=""
-for candidate in qdbus qdbus6 qdbus-qt6 qdbus-qt5; do
-    if command -v "$candidate" &>/dev/null; then
-        QDBUS_BIN="$candidate"
-        break
-    fi
-done
+# Tworzymy plik .desktop, który wstrzeliwuje tapetę bezpośrednio w działającą sesję
+# Skrypt będzie próbował użyć plasma-apply-wallpaperimage. Jeśli operacja się uda (kod 0),
+# plik usunie sam siebie z autostartu i przerwie pętlę.
+cat > "$AUTOSTART_DIR/force-wallpaper.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Wymuszenie Tapety
+Exec=bash -c 'for i in {1..30}; do plasma-apply-wallpaperimage "$WALLPAPER_PATH" && rm -f "$AUTOSTART_DIR/force-wallpaper.desktop" && break; sleep 2; done'
+Hidden=false
+NoDisplay=true
+X-KDE-autostart-condition=
+EOF
 
-if [[ -z "$QDBUS_BIN" ]]; then
-    log_warn "Nie znaleziono polecenia qdbus – pomijanie ustawiania tapety."
-else
-    # Samo istnienie usługi D-Bus plasmashell NIE oznacza, że pulpity
-    # (desktops()) są już załadowane – rejestracja D-Bus następuje bardzo
-    # wcześnie przy starcie, zanim shell zbuduje właściwe pulpity. Test
-    # 'true' zwracał sukces zbyt wcześnie, przez co pętla ustawiająca
-    # tapetę działała na PUSTEJ liście i nic się nie zmieniało – bez
-    # żadnego błędu w logach. Test poniżej sprawdza realną liczbę pulpitów.
-    log_info "Oczekiwanie, aż plasmashell załaduje pulpity..."
-    READY=0
-    for i in $(seq 1 30); do
-        DESKTOP_COUNT="$("$QDBUS_BIN" org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript 'print(desktops().length)' 2>/dev/null || true)"
-        if [[ "$DESKTOP_COUNT" =~ ^[1-9][0-9]*$ ]]; then
-            READY=1
-            break
-        fi
-        sleep 1
-    done
+chmod +x "$AUTOSTART_DIR/force-wallpaper.desktop"
+log_ok "Zadanie zmiany tapety zostało zakolejkowane do wykonania po restarcie."
 
-    if [[ "$READY" -ne 1 ]]; then
-        log_warn "plasmashell nie zgłosił gotowych pulpitów w czasie 30s – pomijanie ustawiania tapety."
-    else
-        log_info "Ustawianie tapety dla wszystkich pulpitów..."
-        WALLPAPER_SET_OUTPUT="$("$QDBUS_BIN" org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript '
-var allDesktops = desktops();
-var errors = "";
-for (i = 0; i < allDesktops.length; i++) {
-    try {
-        d = allDesktops[i];
-        d.wallpaperPlugin = "org.kde.image";
-        d.reloadConfig();
-        d.currentConfigGroup = Array("Wallpaper", "org.kde.image", "General");
-        d.writeConfig("Image", "file:///'"$HOME"'/.local/share/wallpapers/wallpaper.jpg");
-        d.reloadConfig();
-    } catch (e) {
-        errors += e + "; ";
-    }
-}
-print(errors === "" ? "OK:" + allDesktops.length : "ERR:" + errors);
-' 2>&1)"
-
-        if [[ "$WALLPAPER_SET_OUTPUT" == OK:* ]]; then
-            log_ok "Tapeta ustawiona na ${WALLPAPER_SET_OUTPUT#OK:} pulpitach."
-        else
-            log_warn "Nie udało się ustawić tapety: $WALLPAPER_SET_OUTPUT"
-        fi
-    fi
-fi
-
-# Zabijamy proces drugi raz. Plasma zrzuci stan RAMu na dysk - zapisując konfigurację tapety
-log_info "Zapisywanie konfiguracji i wyłączanie Plasmy..."
-kquitapp6 plasmashell 2>/dev/null || kquitapp5 plasmashell 2>/dev/null || true
-sleep 3 # Dłuższy timeout na zrzut danych z RAM na dysk
-killall plasmashell 2>/dev/null || true
-
+# Odbudowa bazy systemowej
 if command -v kbuildsycoca6 &>/dev/null; then
     kbuildsycoca6 --noincremental &>/dev/null || true
-elif command -v kbuildsycoca5 &>/dev/null; then
-    kbuildsycoca5 --noincremental &>/dev/null || true
 fi
 
 # ==========================================================
