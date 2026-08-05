@@ -55,24 +55,6 @@ The script performs a full system deployment divided into several logical stages
 
 ---
 
-## 📂 Required Directory Structure
-
-To allow the script to fully utilize its potential and not skip the visual configuration steps, make sure the following files and folders are present in the script's directory before running it (the script safely skips any missing items):
-
-```text
-📂 Your-Repository/
-├── 📄 install.sh           # Main installation script
-├── 📄 .update.sh          # (Optional) Your personal update script
-├── 📄 piwo.png            # (Optional) User avatar image
-├── 📄 1920x1080.png       # (Optional) System wallpapers for the Next theme
-├── 📄 2560x1440.png       
-├── 📄 5120x2880.png       
-├── 📂 bleachbit/          # (Optional) Pre-configured BleachBit settings for root
-├── 📂 .config/            # (Optional) Your application configuration files
-├── 📂 .local/             # (Optional) Local app data / scripts
-└── 📂 .icons/             # (Optional) Custom icons / mouse cursors
-```
-
 ---
 ### Adding a user to the sudo group:
 ```bash
