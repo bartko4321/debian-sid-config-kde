@@ -167,7 +167,7 @@ log_info "Instalacja pakietów głównych..."
 wait_for_apt
 PACKAGES_INSTALL=(
     # Przeglądarki komunikatory
-    google-chrome-stable brave-origin thunderbird telegram-desktop
+    google-chrome-stable brave-origin thunderbird telegram-desktop thunderbird-l10n-pl
     # Multimedia
     qbittorrent krita audacity gmic mixxx kdenlive handbrake soundconverter
     # Narzędzia systemowe
