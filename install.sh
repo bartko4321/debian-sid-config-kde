@@ -162,6 +162,13 @@ rm -rf ~/.config/akonadi* ~/.config/kmail* ~/.config/kontact* \
        ~/.config/korganizer* ~/.config/kaddressbook* ~/.config/akregator* \
        ~/.config/emailidentities ~/.config/mailtransports
 
+# --- Blokowanie KWallet ---
+log_info "Całkowite wyłączanie demona KWallet (odbieranie uprawnień i maskowanie D-Bus)..."
+sudo chmod -x /usr/bin/kwalletd6 /usr/bin/kwalletd 2>/dev/null || true
+mkdir -p ~/.local/share/dbus-1/services/
+ln -sf /dev/null ~/.local/share/dbus-1/services/org.kde.kwalletd6.service
+ln -sf /dev/null ~/.local/share/dbus-1/services/org.kde.kwalletd.service
+
 # --- Główna instalacja ---
 log_info "Instalacja pakietów głównych..."
 wait_for_apt
