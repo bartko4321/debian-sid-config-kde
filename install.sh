@@ -146,7 +146,7 @@ PACKAGES_REMOVE=(
     nano konqueror plasma-browser-integration plasma-vault
     krdp krfb plasma-thunderbolt kontact kmail kontrast plasma-welcome
     imagemagick kaddressbook kdepim-runtime akonadi-server
-    akregator korganizer
+    akregator korganizer kwalletmanager5 kwalletmanager6
 )
 for pkg in "${PACKAGES_REMOVE[@]}"; do
     sudo apt-get purge -yq "$pkg" 2>/dev/null || true
@@ -161,6 +161,24 @@ rm -rf ~/.local/share/akonadi ~/.local/share/kmail2 ~/.local/share/local-mail \
 rm -rf ~/.config/akonadi* ~/.config/kmail* ~/.config/kontact* \
        ~/.config/korganizer* ~/.config/kaddressbook* ~/.config/akregator* \
        ~/.config/emailidentities ~/.config/mailtransports
+
+# --- Wyłączenie KDE Wallet (Portfela) ---
+log_info "Wyłączanie usługi KDE Wallet..."
+mkdir -p ~/.config
+if [[ -f ~/.config/kwalletrc ]]; then
+    if grep -q "^\[Wallet\]" ~/.config/kwalletrc; then
+        sed -i '/^\[Wallet\]/,/^\[/{s/^Enabled=.*/Enabled=false/}' ~/.config/kwalletrc
+        grep -q "^Enabled=" ~/.config/kwalletrc || sed -i '/^\[Wallet\]/a Enabled=false' ~/.config/kwalletrc
+    else
+        printf '[Wallet]\nEnabled=false\n' >> ~/.config/kwalletrc
+    fi
+else
+    printf '[Wallet]\nEnabled=false\n' > ~/.config/kwalletrc
+fi
+systemctl --user mask kwalletd5.service kwalletd6.service 2>/dev/null || true
+systemctl --user stop kwalletd5.service kwalletd6.service 2>/dev/null || true
+killall -q kwalletd5 kwalletd6 2>/dev/null || true
+log_ok "KDE Wallet wyłączony."
 
 # --- Główna instalacja ---
 log_info "Instalacja pakietów głównych..."
