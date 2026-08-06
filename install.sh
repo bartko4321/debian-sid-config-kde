@@ -175,7 +175,7 @@ PACKAGES_INSTALL=(
     plymouth plymouth-themes
     unrar-free kio-admin mc btrfs-progs exfatprogs ntfs-3g os-prober
     adb fastboot fsarchiver inxi pv rsync cdemu-daemon cdemu-client
-    7zip makeself zenity innoextract needrestart flatpak timeshift flatseal
+    7zip makeself zenity innoextract needrestart flatpak timeshift
     # Python
     python3-defusedxml python3-packaging python3-pip python3-tqdm
     # Gaming / GPU
@@ -273,7 +273,10 @@ sudo update-initramfs -u
 log_info "Dodawanie repozytorium Flathub..."
 sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
 
-# --- Gear Lever (Flathub) ---
+# --- Gear Lever i Flatseal (Flathub) ---
+log_info "Instalacja Flatseal z Flathub..."
+sudo flatpak install -y flathub com.github.tchx84.Flatseal || log_warn "Błąd instalacji Flatseal"
+
 log_info "Instalacja Gear Lever z Flathub..."
 sudo flatpak install -y flathub it.mijorus.gearlever || log_warn "Błąd instalacji Gear Lever"
 
