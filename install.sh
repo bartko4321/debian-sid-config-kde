@@ -164,17 +164,6 @@ rm -rf ~/.config/akonadi* ~/.config/kmail* ~/.config/kontact* \
 
 # --- Wyłączenie KDE Wallet (Portfela) ---
 log_info "Wyłączanie usługi KDE Wallet..."
-mkdir -p ~/.config
-if [[ -f ~/.config/kwalletrc ]]; then
-    if grep -q "^\[Wallet\]" ~/.config/kwalletrc; then
-        sed -i '/^\[Wallet\]/,/^\[/{s/^Enabled=.*/Enabled=false/}' ~/.config/kwalletrc
-        grep -q "^Enabled=" ~/.config/kwalletrc || sed -i '/^\[Wallet\]/a Enabled=false' ~/.config/kwalletrc
-    else
-        printf '[Wallet]\nEnabled=false\n' >> ~/.config/kwalletrc
-    fi
-else
-    printf '[Wallet]\nEnabled=false\n' > ~/.config/kwalletrc
-fi
 systemctl --user mask kwalletd5.service kwalletd6.service 2>/dev/null || true
 systemctl --user stop kwalletd5.service kwalletd6.service 2>/dev/null || true
 killall -q kwalletd5 kwalletd6 2>/dev/null || true
