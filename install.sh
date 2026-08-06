@@ -162,13 +162,6 @@ rm -rf ~/.config/akonadi* ~/.config/kmail* ~/.config/kontact* \
        ~/.config/korganizer* ~/.config/kaddressbook* ~/.config/akregator* \
        ~/.config/emailidentities ~/.config/mailtransports
 
-# --- Wyłączenie KDE Wallet (Portfela) ---
-log_info "Wyłączanie usługi KDE Wallet..."
-systemctl --user mask kwalletd5.service kwalletd6.service 2>/dev/null || true
-systemctl --user stop kwalletd5.service kwalletd6.service 2>/dev/null || true
-killall -q kwalletd5 kwalletd6 2>/dev/null || true
-log_ok "KDE Wallet wyłączony."
-
 # --- Główna instalacja ---
 log_info "Instalacja pakietów głównych..."
 wait_for_apt
