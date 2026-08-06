@@ -273,6 +273,9 @@ sudo update-initramfs -u
 log_info "Dodawanie repozytorium Flathub..."
 sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
 
+log_info "Odświeżanie metadanych Flathub..."
+sudo flatpak update --appstream || true
+
 # --- Gear Lever i Flatseal (Flathub) ---
 log_info "Instalacja Flatseal z Flathub..."
 sudo flatpak install -y flathub com.github.tchx84.Flatseal || log_warn "Błąd instalacji Flatseal"
